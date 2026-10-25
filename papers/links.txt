@@ -1,0 +1,4 @@
+https://www.youtube.com/watch?v=OEmqejOlmlI
+https://github.com/mihir-m-gandhi/Adaptive-Traffic-Signal-Timer/
+https://www.sciencedirect.com/science/article/abs/pii/S1874490725002022
+https://how2electronics.com/density-based-traffic-light-controller-with-esp32-blynk/

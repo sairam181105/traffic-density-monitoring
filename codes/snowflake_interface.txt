@@ -1,0 +1,64 @@
+--- DATABASE, SCHEMA, AND TABLES SETUP ---
+USE ROLE ACCOUNTADMIN;
+-- 2. Create and set the context
+CREATE DATABASE IF NOT EXISTS TRAFFIC_DB;
+USE DATABASE TRAFFIC_DB;
+CREATE SCHEMA IF NOT EXISTS PUBLIC;
+USE SCHEMA PUBLIC;
+
+
+-- 3. Storage Integration (Assuming this was executed successfully once)
+-- If successful, skip this. If not, execute it now.
+CREATE OR REPLACE STORAGE INTEGRATION SNOWFLAKE_TRAFFIC_STR
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = 'S3'
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::248194532212:role/snowflake_traffic_role'
+  ENABLED = TRUE
+  STORAGE_ALLOWED_LOCATIONS = ('s3://marias181105');
+  DESCRIBE INTEGRATION SNOWFLAKE_TRAFFIC_STR;
+  
+-- 1. SWITCH TO ACCOUNTADMIN AND GRANT PERMISSION TO SYSADMIN
+USE ROLE ACCOUNTADMIN;
+GRANT USAGE ON INTEGRATION SNOWFLAKE_TRAFFIC_STR TO ROLE SYSADMIN;
+
+-- 2. SWITCH BACK TO SYSADMIN (The role creating the stage)
+USE ROLE SYSADMIN;
+
+-- 3. SET CONTEXT (Already done in your image, but good practice)
+USE DATABASE TRAFFIC_DB;
+USE SCHEMA PUBLIC;
+
+-- 4. RERUN THE CREATE STAGE COMMAND
+CREATE OR REPLACE STAGE AWS_EXT_STAGE_INTEGRATION
+URL = 's3://marias181105' -- Note: Added the /traffic_logs/ prefix
+STORAGE_INTEGRATION = SNOWFLAKE_TRAFFIC_STR;
+  
+  list @TRAFFIC_DB.PUBLIC.AWS_EXT_STAGE_INTEGRATION;
+-- 1. Create File Format (for reading JSON from S3)
+CREATE OR REPLACE FILE FORMAT TRAFFIC_JSON_FORMAT
+  TYPE = JSON
+  STRIP_OUTER_ARRAY = FALSE;
+
+-- 2. Create Staging Table (where raw data lands)
+CREATE OR REPLACE TABLE RAW_TRAFFIC_DATA (
+    RAW_JSON VARIANT,
+    LOAD_TIME TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- 3. Create External Stage (Pointer to your S3 bucket)
+-- We know this command succeeded previously, but running it ensures it's available.
+CREATE OR REPLACE STAGE AWS_EXT_STAGE_INTEGRATION
+  URL = 's3://my-traffic-data-bucket-1' 
+  STORAGE_INTEGRATION = SNOWFLAKE_TRAFFIC_STR;
+list @AWS_EXT_STAGE_INTEGRATION;
+-- 4. CREATE THE SNOWPIPE (This is the specific command to create the object)
+CREATE OR REPLACE PIPE TRAFFIC_PIPE AUTO_INGEST=TRUE AS
+  COPY INTO RAW_TRAFFIC_DATA (RAW_JSON)
+  FROM @AWS_EXT_STAGE_INTEGRATION -- The Stage created above
+  FILE_FORMAT = (FORMAT_NAME = TRAFFIC_JSON_FORMAT)
+  ON_ERROR = 'CONTINUE';
+
+-- 5. Final Check: Retrieve the SQS ARN (This will only work if step 4 succeeded)
+SELECT SYSTEM$PIPE_STATUS('TRAFFIC_PIPE');
+-- Use the SYSADMIN role to ensure sufficient privileges
+

@@ -1,0 +1,37 @@
+# ===============================================
+# CRITICAL SECURITY EXCLUSIONS - DO NOT REMOVE
+# ===============================================
+# Block entire credential and key directories
+aws key access/
+aws_certificates/
+
+# Block key extensions anywhere in project
+*.pem
+*.crt
+*.key
+*accessKeys*.csv
+*.env
+
+# ===============================================
+# Large Media & Video Files
+# ===============================================
+# Prevent pushing heavy videos directly to Git (causes push errors / >100MB block)
+video/*.mp4
+*.mp4
+*.avi
+*.mov
+
+# ===============================================
+# Python & Environment
+# ===============================================
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+ENV/
+
+# ===============================================
+# Temporary Logs & CSVs
+# ===============================================
+*.log
+LOCAL_CSV_PATH*
