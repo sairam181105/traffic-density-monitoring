@@ -1,6 +1,6 @@
 # Real-Time Smart Traffic Density Monitoring & Cloud Analytics Pipeline
 
-An end-to-end intelligent transportation monitoring architecture that executes computer vision detection at the edge, calculates real-time lane vehicular densities, pushes telemetry to Amazon Web Services (AWS) S3, and continuously stages structured records into Snowflake Data Warehouse via Snowpipe.
+An intelligent edge-to-cloud transportation monitoring system deployed on a **Raspberry Pi 5** edge node. The system performs multi-threaded camera acquisition, executes dual computer vision detection models at the edge, logs traffic telemetry locally, pushes structured JSON payloads to Amazon Web Services (AWS) S3, and triggers automated warehouse ingestion into Snowflake via Snowpipe.
 
 ---
 
@@ -10,25 +10,29 @@ An end-to-end intelligent transportation monitoring architecture that executes c
   <img src="video/architecture.png" alt="Smart Traffic Density Monitoring Pipeline Architecture" width="850">
 </p>
 
-1. **Multi-Camera Edge Ingestion**: Threaded video capture streams frames concurrently across multiple camera indices without stalling detection threads.
-2. **Dual Edge Inference Engines**:
-   - **YOLOv5 Deep Learning**: Pre-trained object detection filtering specific vehicular classes (`car`, `bus`, `truck`, `motorcycle`).
-   - **OpenCV MOG2 Background Subtraction**: Low-latency edge contour tracking with shadow filtering and morphological noise suppression.
-3. **Local Telemetry & Time-Series Analytics**: Aggregated vehicle counts, rolling moving averages, and density distribution visualizations.
-4. **Cloud Staging (AWS S3)**: Automated scheduled JSON telemetry payloads dispatched to Amazon S3 buckets.
-5. **Continuous Data Warehousing (Snowflake & Snowpipe)**: Event-driven ingestion using AWS S3 Storage Integrations and Snowpipe auto-ingest into raw variant staging tables.
+1. **Edge Node (Raspberry Pi 5)**:
+   - **Hardware**: Raspberry Pi 5 (Quad-core ARM Cortex-A76 @ 2.4GHz) managing USB 3.0/CSI video feeds and edge inferencing.
+   - **Multi-Camera Ingestion**: Non-blocking, threaded frame acquisition (`camera_handler.py`) balancing input throughput across lanes.
+2. **Dual-Model Edge Inference**:
+   - **YOLOv5 Deep Learning**: Real-time vehicle detection and classification (`car`, `bus`, `truck`, `motorcycle`) using PyTorch on ARM64 (`yolo_detector.py`, `main.py`).
+   - **OpenCV MOG2 Background Subtraction**: Fast morphological motion tracking with shadow suppression tailored for embedded CPU efficiency (`main_control.py`).
+3. **Local Telemetry & Density Profiling**:
+   - Time-series logging of vehicle density at configurable cycle intervals (`LOCAL_CSV_PATH.txt`).
+   - Automated 4-quadrant traffic analytics dashboard (moving average, density histogram, volume trends) via Matplotlib.
+4. **Cloud Staging (AWS S3)**:
+   - Authenticated edge-to-cloud payload dispatch via `boto3` logging lane IDs, timestamps, and density counts.
+5. **Continuous Data Warehousing (Snowflake & Snowpipe)**:
+   - Serverless auto-ingest pipe staging raw JSON variant payloads directly from S3 into analytical data tables (`snowflake_interface.txt`).
 
 ---
 
 ## 🎥 Demo Video
 
-Watch the complete demonstration of vehicle detection, density tracking, and cloud data dispatch:
+Watch the complete demonstration of vehicle detection, density tracking, and cloud telemetry dispatch:
 
-> **Click the video below or view it in the `video/` directory:**
-> 
-> *Direct link: [main_project_recording.mp4](video/main_project_recording.mp4)*
+> Direct link in repository: [main_project_recording.mp4](video/main_project_recording.mp4)
 
-*(Tip: Once pushed to GitHub, you can drag and drop your `.mp4` into the README editor on GitHub to embed an interactive, in-browser media player).*
+*(Tip: You can drag and drop `video/main_project_recording.mp4` into the GitHub web README editor to embed an interactive, in-browser media player).*
 
 ---
 
@@ -45,7 +49,6 @@ Watch the complete demonstration of vehicle detection, density tracking, and clo
 ├── papers/                     # Reference papers and research background
 ├── video/
 │   ├── architecture.png        # System architecture diagram
-│   ├── AWS final report.docx   # AWS cloud setup & implementation report
 │   ├── main_project_recording.mp4 # Video demonstration of live monitoring
 │   └── Recording 2025-10-01.mp4   # Raw test footage
 ├── .gitignore                  # Credential and artifact exclusion rules
